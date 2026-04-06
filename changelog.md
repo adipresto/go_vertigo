@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.4.0] - 2026-04-06
+
+### Added
+- [FEATURE] **Triple Base Architecture**: Extended from Double Base to support a third layer (Base 3: MQTT).
+- [FEATURE] **MQTT Integration**: Industrial-grade connectivity for IoT/Edge devices.
+- [FEATURE] **Selective Base Activation**: Users can now enable/disable Centrifugo and MQTT independently via `config.yaml`.
+- [TESTING] **REST API BDD Scenarios**: Added comprehensive Gherkin/godog tests for `/api/users` and `/api/dispatch`.
+
+### Changed
+- **Architectural Shift**: Master facade renamed to `TripleBaseBroker` (from `DoubleBaseBroker`).
+- **Handler Refactoring**: Moved REST handlers to `pkg/broker/api.go` for improved testability (using `httptest`).
+- **Resilience Strategy**: Enhanced connection handling; system now runs silently in "Database-only" mode if networking bases are disabled.
 
 ## [0.3.0] - 2026-04-06
 

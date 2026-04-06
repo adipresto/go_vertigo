@@ -1,20 +1,25 @@
-# Architecture: Vertigo (Double Base)
+# Architecture: Vertigo (Triple Base)
 
 This document describes the architectural patterns used in the **Vertigo** project.
 
 ## 1. Master Facade Design Pattern
-The `VertigoBroker` (formerly DoubleBaseBroker) acts as the master facade. It is the only interface that the business logic (higher-level application code) interacts with. It abstracts away:
+The `TripleBaseBroker` acts as the master facade. It is the only interface that the business logic (higher-level application code) interacts with. It abstracts away:
 - Database connection lifecycle (SQLite WAL).
 - Real-time messaging connectivity (Centrifugo).
+- Industrial connectivity (MQTT).
 - Query registration and SQL execution.
 - Data Transformation (DTO) logic.
 
-## 2. Double Base Architecture
-Vertigo decouples two primary data layers:
+## 2. Triple Base Architecture
+Vertigo decouples three primary data layers:
 1.  **Base 1 (Persistence):** SQL Database (SQLite) with a connection pool. It serves as the durable source of truth.
 2.  **Base 2 (Network):** Real-time messaging (Centrifugo). It serves as the low-latency delivery mechanism for active users.
+3.  **Base 3 (Industrial Connectivity):** MQTT Broker. It serves as the standard protocol for industrial IoT and edge integration.
 
-If Base 2 is down, the system remains fully functional for persistence (Base 1) and will attempt to resume networking asynchronously.
+### Selective Activation & Resilience
+If Base 2 or Base 3 is down, the system remains fully functional for persistence (Base 1). Users can selectively enable or disable Base 2 and 3 via `config.yaml`.
+- **Enabled**: The broker attempts connection and logs warnings if offline.
+- **Disabled**: The broker skips connection entirely, running in a clean "Base 1 only" mode.
 
 ## 3. Streaming & Zero-Copy Engine
 To avoid **Out-of-Memory (OOM)** failures when handling 1,000,000+ data points:

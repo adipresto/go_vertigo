@@ -11,7 +11,14 @@ type Config struct {
 		Path string `yaml:"path"`
 	} `yaml:"database"`
 	Network struct {
-		CentrifugoURL string `yaml:"centrifugo_url"`
+		Centrifugo struct {
+			Enabled bool   `yaml:"enabled"`
+			URL     string `yaml:"url"`
+		} `yaml:"centrifugo"`
+		MQTT struct {
+			Enabled bool   `yaml:"enabled"`
+			URL     string `yaml:"url"`
+		} `yaml:"mqtt"`
 	} `yaml:"network"`
 	Server struct {
 		Port int `yaml:"port"`

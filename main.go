@@ -14,7 +14,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var globalBroker *broker.DoubleBaseBroker
+var globalBroker *broker.TripleBaseBroker
 
 func main() {
 	fmt.Println("🚀 Starting Vertigo (REST & GraphQL Demo)...")
@@ -26,9 +26,9 @@ func main() {
 	}
 
 	// 2. Initialize Facade
-	globalBroker, err = broker.NewBroker(cfg.Database.Path, cfg.Network.CentrifugoURL)
+	globalBroker, err = broker.NewBroker(cfg)
 	if err != nil {
-		log.Printf("Warning: Broker initialized with network error: %v", err)
+		log.Fatalf("Fatal: Failed to initialize Vertigo: %v", err)
 	}
 
 	// 3. Setup Schema for Demo
@@ -42,9 +42,8 @@ func main() {
 
 	// 4. Register Routes
 	http.HandleFunc("/", landingPage)
-	http.HandleFunc("/api/users", handleGetUsers)
-	http.HandleFunc("/api/dispatch", handleDispatch)
-
+	http.HandleFunc("/api/users", globalBroker.HandleGetUsers())
+	http.HandleFunc("/api/dispatch", globalBroker.HandleDispatch())
 	// GraphQL Handler
 	h := handler.New(&handler.Config{
 		Schema:   &gqlSchema,
@@ -58,7 +57,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", cfg.Server.Port), nil))
 }
 
-func setupSchema(b *broker.DoubleBaseBroker) {
+func setupSchema(b *broker.TripleBaseBroker) {
 	_, err := b.DB.Exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)")
 	if err != nil {
 		log.Fatal(err)
@@ -71,49 +70,6 @@ func setupSchema(b *broker.DoubleBaseBroker) {
 		_, _ = b.DB.Exec("INSERT INTO users (name, email) VALUES (?, ?), (?, ?)",
 			"Alice", "alice@example.com", "Bob", "bob@example.com")
 	}
-}
-
-// REST Handlers
-func handleGetUsers(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	data, err := globalBroker.Dispatch(r.Context(), "SELECT * FROM users", "rest_api_users")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
-}
-
-func handleDispatch(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var req struct {
-		SQL     string `json:"sql"`
-		Channel string `json:"channel"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	data, err := globalBroker.Dispatch(r.Context(), req.SQL, req.Channel)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
 }
 
 // GraphQL Setup

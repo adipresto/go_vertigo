@@ -4,7 +4,12 @@ database:
   path: "db/demo_api.db"
 
 network:
-  centrifugo_url: "ws://localhost:8010/connection/websocket"
+  centrifugo:
+    enabled: true
+    url: "ws://localhost:8010/connection/websocket"
+  mqtt:
+    enabled: false
+    url: "tcp://localhost:1883"
 
 server:
   port: 8080

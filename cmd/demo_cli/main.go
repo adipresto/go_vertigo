@@ -21,9 +21,9 @@ func main() {
 	}
 
 	// 2. Initialize Facade
-	b, err := broker.NewBroker(cfg.Database.Path, cfg.Network.CentrifugoURL)
+	b, err := broker.NewBroker(cfg)
 	if err != nil {
-		log.Printf("Warning: Broker initialized with network error: %v", err)
+		log.Fatalf("Fatal: Failed to initialize Vertigo: %v", err)
 	}
 
 	// 2. Setup Schema for Demo

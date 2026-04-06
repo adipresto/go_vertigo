@@ -2,19 +2,19 @@
 
 [![Go Version](https://img.shields.io/badge/go-1.23+-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Architecture](https://img.shields.io/badge/Architecture-Double%20Base-orange.svg)](architecture.md)
+[![Architecture](https://img.shields.io/badge/Architecture-Triple%20Base-orange.svg)](architecture.md)
 
-**Vertigo** (formerly phgo) is a high-performance, resilient persistence bridge designed for industrial-grade Go services. It implements the **Double Base Architecture** to decouple durable storage (SQL) from real-time networking (Websocket/Centrifugo), ensuring your service stays alive even when the network fails.
+**Vertigo** is a high-performance, resilient persistence bridge designed for industrial-grade Go services. It implements the **Triple Base Architecture** to decouple durable storage (SQL) from real-time networking (Websocket/Centrifugo) and industrial connectivity (MQTT), ensuring your service stays alive even when external brokers fail.
 
 ---
 
 ## 🚀 Why use Vertigo?
 
-- **Double Base Resilience**: Local persistence (Base 1) works independently of real-time broadcasting (Base 2).
-- **Master Facade Pattern**: Simple API (`NewBroker` & `Dispatch`) hides complex DB pooling and network retry logic.
-- **Zero-Copy Streaming**: Avoids RAM spikes by streaming SQL rows directly to JSON—ideal for 1,000,000+ records.
-- **Raw SQL Dispatcher**: No need to write boilerplate queries. Just send SQL, get JSON.
-- **Multi-Interface**: Built-in support for **REST** and **GraphQL** demos.
+- **Triple Base Resilience**: Local persistence (Base 1) works independently of real-time broadcasting (Base 2/3).
+- **Master Facade Pattern**: Simple API (`NewBroker` & `Dispatch`) hides complex DB pooling, MQTT clients, and Centrifugo logic.
+- **Industrial Readiness**: Built-in **MQTT (Base 3)** for IoT and edge integration.
+- **Zero-Copy Streaming**: Avoids RAM spikes by streaming SQL rows directly—ideal for massive datasets.
+- **Selective Activation**: Enable or disable networking bases via `config.yaml` to run in "Air-gapped" or "Network-only" modes.
 
 ---
 
@@ -22,11 +22,13 @@
 
 ```mermaid
 graph TD
-    Client[Service Client] -->|Dispatch SQL| Facade[VertigoBroker]
+    Client[Service Client] -->|Dispatch SQL| Facade[TripleBaseBroker]
     Facade -->|Stream| Base1[(SQLite/Base 1)]
     Base1 -->|JSON Payload| Facade
     Facade -.->|Async Broadcast| Base2{{Centrifugo/Base 2}}
-    Base2 -.->|Real-time| Subs[Subscribed Clients]
+    Facade -.->|Async Broadcast| Base3{{MQTT/Base 3}}
+    Base2 -.->|Websocket| Subs1[Web Clients]
+    Base3 -.->|IoT/Edge| Subs2[Industrial Clients]
 ```
 
 ---
@@ -51,10 +53,31 @@ import "vertigo/pkg/config"
 
 func main() {
     cfg, _ := config.LoadConfig("config.yaml")
-    v, err := broker.NewBroker(cfg.Database.Path, cfg.Network.CentrifugoURL)
+    v, err := broker.NewBroker(cfg)
     // ...
 }
 ```
+
+---
+
+## 📡 Networking (Base 2)
+
+### Centrifugo Setup
+Vertigo uses **Centrifugo** as its real-time broadcasting engine. If you don't have it running, Vertigo will enter **Resilience Mode**.
+
+**Run with Docker (Recommended):**
+```bash
+docker run -p 8010:8010 centrifuge/centrifugo centrifugo
+```
+
+### Resilience Mode & Troubleshooting
+If you see a warning like: 
+`Warning: Broker initialized with network error: failed to connect to Centrifugo...`
+
+Don't worry! This means:
+1. **Base 1 (Database)** is still fully functional.
+2. **Base 2 (Network)** is automatically disabled/standby.
+3. Your application will NOT crash; it just won't broadcast real-time updates until Centrifugo is online.
 
 ---
 
