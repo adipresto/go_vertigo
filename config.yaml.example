@@ -1,0 +1,10 @@
+# Persistence Handler Go Configuration
+
+database:
+  path: "db/demo_api.db"
+
+network:
+  centrifugo_url: "ws://localhost:8010/connection/websocket"
+
+server:
+  port: 8080

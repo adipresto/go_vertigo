@@ -1,0 +1,4 @@
+.env
+.dotfiles/
+config.yaml
+db/
